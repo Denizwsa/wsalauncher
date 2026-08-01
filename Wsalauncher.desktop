@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Wsalauncher
+Comment=Wsamiaw · Minecraft 26.2 launcher
+# Do not edit paths by hand — run: ./install-desktop.sh
+Exec=REPLACE_ME/Wsalauncher
+Path=REPLACE_ME
+Icon=REPLACE_ME/app/logo.png
+Terminal=false
+Categories=Game;
+StartupNotify=true

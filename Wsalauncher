@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Kısayol: ./Wsalauncher → run.sh (app/ hazır binary, CMake yok)
+exec "$(cd "$(dirname "$0")" && pwd)/run.sh" "$@"

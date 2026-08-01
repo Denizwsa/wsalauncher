@@ -1,0 +1,22 @@
+[package]
+name = "wsalauncher"
+version = "0.1.0"
+edition = "2021"
+description = "Wsamiaw 26.2 Fabric launcher (GUI)"
+
+[dependencies]
+directories = "6.0.0"
+eframe = { version = "0.31", default-features = true, features = ["default_fonts", "glow"] }
+egui = "0.31"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha1 = "0.10.6"
+uuid = { version = "1.11", features = ["v3"] }
+zip = "2.2"
+open = "5.3"
+
+[profile.release]
+lto = false
+codegen-units = 4
+strip = true

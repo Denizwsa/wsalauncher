@@ -1,0 +1,7 @@
+/build/
+/build-win-cross/
+/dist/
+/app/
+.venv/
+legacy/
+target/
