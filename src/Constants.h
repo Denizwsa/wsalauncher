@@ -12,6 +12,10 @@ inline constexpr const char *kFabricInstallerUrl =
 inline constexpr const char *kApiBase = "https://wsamiaw-api.wsamiaw.workers.dev";
 inline constexpr const char *kSiteAccountUrl = "https://wsamiawclient.lol/account.html";
 inline constexpr const char *kSiteReleasesManifest = "https://wsamiawclient.lol/releases/manifest.json";
+inline constexpr const char *kLauncherManifestUrl =
+    "https://cdn.wsamiawclient.lol/releases/launcher/manifest.json";
+inline constexpr const char *kLauncherReleaseBaseUrl =
+    "https://cdn.wsamiawclient.lol/releases/launcher/";
 inline constexpr const char *kGithubLatestReleaseApi =
     "https://api.github.com/repos/Denizwsa/wsamiaw-recode/releases/latest";
 
@@ -19,8 +23,9 @@ inline QString fabricVersionId() {
     return QString("fabric-loader-%1-%2").arg(kLoaderVersion, kMcVersion);
 }
 
+/// VulkanMod replaces Sodium/Iris; keep non-rendering performance mods only.
 inline QStringList bundledModSlugs() {
-    return {"fabric-api", "sodium", "lithium", "ferritecore", "viafabricplus", "entityculling"};
+    return {"fabric-api", "vulkanmod", "lithium", "ferritecore", "entityculling", "viafabricplus"};
 }
 
 /// Optional local fallback only; releases are preferred.

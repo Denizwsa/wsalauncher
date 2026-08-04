@@ -9,11 +9,11 @@ pub const FABRIC_INSTALLER_URL: &str =
 
 pub const BUNDLE_MOD_SLUGS: &[&str] = &[
     "fabric-api",
-    "sodium",
+    "vulkanmod",
     "lithium",
     "ferritecore",
-    "viafabricplus",
     "entityculling",
+    "viafabricplus",
 ];
 
 pub const WSAMIAW_JAR_DEFAULT: &str =

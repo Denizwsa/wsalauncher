@@ -74,6 +74,20 @@ linux_bin() {
   return 1
 }
 
+launcher_binary_stale() {
+  local bin="$1"
+  [[ -f "$bin" ]] || return 1
+  if strings "$bin" 2>/dev/null | grep -qF 'api.github.com/repos/Denizwsa'; then
+    return 0
+  fi
+  return 1
+}
+
+purge_stale_launcher() {
+  echo "Eski launcher sürümü bulundu (GitHub JAR) — site paketi indiriliyor…" >&2
+  rm -rf "$APP"
+}
+
 install_linux_from_dist() {
   local dist_bin="$ROOT/dist/Wsalauncher-Linux/app/wsalauncher"
   [[ -x "$dist_bin" ]] || return 1
@@ -132,8 +146,14 @@ install_macos_from_url() {
 }
 
 ensure_linux() {
-  if linux_bin >/dev/null; then
-    check_not_elf_on_mac "$APP/wsalauncher"
+  local bin
+  bin="$(linux_bin 2>/dev/null || true)"
+  if [[ -n "$bin" ]] && launcher_binary_stale "$bin"; then
+    purge_stale_launcher
+    bin=""
+  fi
+  if [[ -n "$bin" ]]; then
+    check_not_elf_on_mac "$bin"
     return 0
   fi
   install_linux_from_dist || install_linux_from_url || {

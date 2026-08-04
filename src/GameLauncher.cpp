@@ -1,6 +1,7 @@
 #include "GameLauncher.h"
 
 #include "Bootstrap.h"
+#include "LauncherUpdate.h"
 #include "Constants.h"
 #include "Paths.h"
 #include "Platform.h"
@@ -335,7 +336,7 @@ bool prepareLaunch(const QString &javaPathIn, const QString &usernameIn, int ram
         assetIndex.value(QStringLiteral("id")).toString(QStringLiteral("26"));
     subs[QStringLiteral("natives_directory")] = instance + QStringLiteral("/natives");
     subs[QStringLiteral("launcher_name")] = QStringLiteral("Wsalauncher");
-    subs[QStringLiteral("launcher_version")] = QStringLiteral("0.3");
+    subs[QStringLiteral("launcher_version")] = launcherUpdate::currentVersion();
     subs[QStringLiteral("clientid")] = QStringLiteral("0");
     subs[QStringLiteral("auth_xuid")] = QStringLiteral("0");
     subs[QStringLiteral("version_type")] = QStringLiteral("release");
@@ -356,7 +357,10 @@ bool prepareLaunch(const QString &javaPathIn, const QString &usernameIn, int ram
     }
 
     QStringList args;
-    args << QStringLiteral("-Xmx%1M").arg(ramMb) << QStringLiteral("-Xms%1M").arg(qMin(ramMb, 1024));
+    const int heapMin = qMin(ramMb, 1024);
+    args << QStringLiteral("-Xmx%1M").arg(ramMb) << QStringLiteral("-Xms%1M").arg(heapMin)
+         << QStringLiteral("-XX:+UseZGC") << QStringLiteral("-XX:+DisableExplicitGC")
+         << QStringLiteral("-XX:+AlwaysPreTouch");
     if (!launchToken.isEmpty()) {
         args << QStringLiteral("-Dwsamiaw.launcher=Wsalauncher");
         args << QStringLiteral("-Dwsamiaw.launchToken=%1").arg(launchToken);

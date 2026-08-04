@@ -37,6 +37,8 @@ private slots:
     void onOpenAccountSite();
     void refreshAccountStatus();
 
+    void onUpdateLauncher();
+
 protected:
     void closeEvent(QCloseEvent *event) override;
 

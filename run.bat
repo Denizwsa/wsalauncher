@@ -8,7 +8,7 @@ set "APP=%ROOT%app"
 set "BIN=%APP%\wsalauncher.exe"
 set "CACHE=%LOCALAPPDATA%\wsalauncher\cache"
 if not defined WSALAUNCHER_WINDOWS_URL (
-  set "WSALAUNCHER_WINDOWS_URL=https://wsamiawclient.lol/releases/launcher/Wsalauncher-Windows.zip"
+  set "WSALAUNCHER_WINDOWS_URL=https://cdn.wsamiawclient.lol/releases/launcher/Wsalauncher-Windows.zip"
 )
 
 if /i "%~1"=="--reinstall" (

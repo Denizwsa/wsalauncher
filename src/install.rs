@@ -24,7 +24,7 @@ pub fn run_full_install(
 
     install_fabric(java, &instance, log)?;
 
-    log("Downloading performance / utility mods…");
+    log("Downloading performance / utility mods (VulkanMod stack)…");
     for slug in BUNDLE_MOD_SLUGS {
         if let Err(e) = fetch_and_install_mod(&client, slug, &mods, log) {
             log(&format!("WARN {slug}: {e}"));

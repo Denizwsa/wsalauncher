@@ -4,6 +4,7 @@
 #include "GameLauncher.h"
 #include "Hwid.h"
 #include "Installer.h"
+#include "LauncherUpdate.h"
 #include "Paths.h"
 #include "Platform.h"
 #include "WsamiawApi.h"
@@ -303,6 +304,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     m_glowTimer = new QTimer(this);
     connect(m_glowTimer, &QTimer::timeout, this, &MainWindow::pulseGlow);
     m_glowTimer->start(40);
+
+    QTimer::singleShot(1500, this, [this]() { launcherUpdate::checkAndOfferUpdate(this, true); });
 }
 
 QPixmap MainWindow::hiDpiLogo(int logicalPx) const {
@@ -550,6 +553,7 @@ void MainWindow::setupUi() {
 
     // Settings
     QPushButton *saveBtn = nullptr;
+    QPushButton *updateLauncherBtn = nullptr;
     {
         auto *settingsPage = new QWidget;
         auto *outer = new QVBoxLayout(settingsPage);
@@ -591,6 +595,14 @@ void MainWindow::setupUi() {
         saveBtn->setCursor(Qt::PointingHandCursor);
         saveBtn->setFixedWidth(160);
         setLay->addWidget(saveBtn, 0, Qt::AlignLeft);
+        updateLauncherBtn = new QPushButton(QStringLiteral("Update Wsalauncher"));
+        updateLauncherBtn->setCursor(Qt::PointingHandCursor);
+        updateLauncherBtn->setFixedWidth(180);
+        setLay->addWidget(updateLauncherBtn, 0, Qt::AlignLeft);
+        auto *launcherVer = new QLabel(
+            QStringLiteral("Launcher %1").arg(launcherUpdate::currentVersion()));
+        launcherVer->setObjectName(QStringLiteral("muted"));
+        setLay->addWidget(launcherVer);
         auto *warn = new QLabel(QStringLiteral("Java 25+ is required for Minecraft 26.2"));
         warn->setObjectName(QStringLiteral("warnLabel"));
         setLay->addWidget(warn);
@@ -619,6 +631,7 @@ void MainWindow::setupUi() {
     connect(m_playBtn, &QPushButton::clicked, this, &MainWindow::onPlay);
     connect(m_installBtn, &QPushButton::clicked, this, &MainWindow::onInstall);
     connect(saveBtn, &QPushButton::clicked, this, &MainWindow::onSaveSettings);
+    connect(updateLauncherBtn, &QPushButton::clicked, this, &MainWindow::onUpdateLauncher);
     connect(openMods, &QPushButton::clicked, this, &MainWindow::onOpenMods);
 }
 
@@ -721,6 +734,10 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::onSaveSettings() {
     saveConfig();
     appendLog(QStringLiteral("Settings saved."));
+}
+
+void MainWindow::onUpdateLauncher() {
+    launcherUpdate::checkAndOfferUpdate(this, false);
 }
 
 void MainWindow::onOpenMods() {

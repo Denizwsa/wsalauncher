@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(wsalauncher VERSION 0.3.0 LANGUAGES CXX)
+project(wsalauncher VERSION 0.3.8 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,6 +21,7 @@ set(WSALAUNCHER_SOURCES
     src/WsamiawApi.cpp
     src/Hwid.cpp
     src/Bootstrap.cpp
+    src/LauncherUpdate.cpp
     src/MainWindow.h
     src/Installer.h
     src/GameLauncher.h
@@ -32,6 +33,7 @@ set(WSALAUNCHER_SOURCES
     src/WsamiawApi.h
     src/Hwid.h
     src/Bootstrap.h
+    src/LauncherUpdate.h
     src/Constants.h
 )
 
@@ -50,6 +52,8 @@ else()
 endif()
 
 target_link_libraries(wsalauncher PRIVATE Qt6::Widgets Qt6::Network)
+
+target_compile_definitions(wsalauncher PRIVATE WSALAUNCHER_VERSION="${PROJECT_VERSION}")
 
 # Windows: after building, run package-windows.bat to ship a portable folder
 # (exe + Qt DLLs via windeployqt — end users do not install Qt).

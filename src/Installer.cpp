@@ -50,6 +50,7 @@ bool runFullInstall(QNetworkAccessManager &nam, const QString &javaPathIn,
     const QString instance = paths::minecraftDir();
     const QString mods = instance + QStringLiteral("/mods");
     QDir().mkpath(mods);
+    modrinth::removeConflictingRenderMods(mods);
 
     if (!bootstrap::ensureGameEnvironment(instance, log, errorOut))
         return false;

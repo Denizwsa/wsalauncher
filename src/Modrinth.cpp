@@ -12,6 +12,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QRegularExpression>
 #include <QUrl>
 
 namespace modrinth {
@@ -41,32 +42,101 @@ static bool fetchJson(QNetworkAccessManager &nam, const QUrl &url, QJsonDocument
     return true;
 }
 
-bool installMod(QNetworkAccessManager &nam, const QString &slug, const QString &modsDir,
-                QString *errorOut) {
+static QStringList gameVersionsForSlug(const QString &slug) {
+    if (slug == QStringLiteral("vulkanmod")) {
+        return {QString::fromUtf8(constants::kMcVersion), QStringLiteral("26.1.2"),
+                QStringLiteral("26.1")};
+    }
+    return {QString::fromUtf8(constants::kMcVersion)};
+}
+
+static bool fetchModrinthVersions(QNetworkAccessManager &nam, const QString &slug,
+                                  const QString &gameVersion, QJsonArray *out,
+                                  QString *errorOut) {
     const QString url = QStringLiteral(
         "https://api.modrinth.com/v2/project/%1/version?game_versions=[\"%2\"]&loaders=[\"fabric\"]")
-                          .arg(slug, constants::kMcVersion);
+                          .arg(slug, gameVersion);
     QJsonDocument doc;
     if (!fetchJson(nam, QUrl(url), &doc, errorOut))
         return false;
-    if (!doc.isArray() || doc.array().isEmpty()) {
+    if (!doc.isArray()) {
         if (errorOut)
-            *errorOut = QStringLiteral("No version for %1").arg(slug);
+            *errorOut = QStringLiteral("Bad Modrinth response for %1").arg(slug);
+        return false;
+    }
+    *out = doc.array();
+    return true;
+}
+
+void removeConflictingRenderMods(const QString &modsDir) {
+    const QDir dir(modsDir);
+    if (!dir.exists())
+        return;
+    static const QRegularExpression patterns[] = {
+        QRegularExpression(QStringLiteral("^sodium.*\\.jar$"), QRegularExpression::CaseInsensitiveOption),
+        QRegularExpression(QStringLiteral("^iris.*\\.jar$"), QRegularExpression::CaseInsensitiveOption),
+        QRegularExpression(QStringLiteral("^indium.*\\.jar$"), QRegularExpression::CaseInsensitiveOption),
+        QRegularExpression(QStringLiteral("^nvidium.*\\.jar$"), QRegularExpression::CaseInsensitiveOption),
+        QRegularExpression(QStringLiteral("^optifabric.*\\.jar$"), QRegularExpression::CaseInsensitiveOption),
+        QRegularExpression(QStringLiteral("^canvas.*\\.jar$"), QRegularExpression::CaseInsensitiveOption),
+    };
+    for (const QString &name : dir.entryList(QDir::Files)) {
+        for (const QRegularExpression &re : patterns) {
+            if (re.match(name).hasMatch()) {
+                QFile::remove(modsDir + QLatin1Char('/') + name);
+                break;
+            }
+        }
+    }
+}
+
+bool installMod(QNetworkAccessManager &nam, const QString &slug, const QString &modsDir,
+                QString *errorOut) {
+    if (slug == QStringLiteral("vulkanmod"))
+        removeConflictingRenderMods(modsDir);
+
+    QJsonArray versions;
+    QString fetchErr;
+    for (const QString &gv : gameVersionsForSlug(slug)) {
+        QJsonArray candidate;
+        if (!fetchModrinthVersions(nam, slug, gv, &candidate, &fetchErr))
+            return false;
+        if (!candidate.isEmpty()) {
+            versions = candidate;
+            break;
+        }
+    }
+    if (versions.isEmpty()) {
+        if (errorOut)
+            *errorOut = QStringLiteral("No Fabric version for %1 on MC %2")
+                            .arg(slug, QString::fromUtf8(constants::kMcVersion));
         return false;
     }
 
-    // Prefer non-alpha builds (Sodium alpha crashes Video Settings on 26.2).
+    // Prefer stable releases (skip alpha/beta when a release exists).
     QJsonObject ver;
-    for (const QJsonValue &v : doc.array()) {
+    for (const QJsonValue &v : versions) {
         const QJsonObject o = v.toObject();
         const QString vn = o.value(QStringLiteral("version_number")).toString();
-        if (!vn.contains(QStringLiteral("alpha"), Qt::CaseInsensitive)) {
+        const QString vt = o.value(QStringLiteral("version_type")).toString();
+        if (vt == QStringLiteral("release") &&
+            !vn.contains(QStringLiteral("alpha"), Qt::CaseInsensitive)) {
             ver = o;
             break;
         }
     }
+    if (ver.isEmpty()) {
+        for (const QJsonValue &v : versions) {
+            const QJsonObject o = v.toObject();
+            const QString vn = o.value(QStringLiteral("version_number")).toString();
+            if (!vn.contains(QStringLiteral("alpha"), Qt::CaseInsensitive)) {
+                ver = o;
+                break;
+            }
+        }
+    }
     if (ver.isEmpty())
-        ver = doc.array().first().toObject();
+        ver = versions.first().toObject();
 
     QJsonArray files = ver.value(QStringLiteral("files")).toArray();
     if (files.isEmpty()) {
@@ -89,7 +159,6 @@ bool installMod(QNetworkAccessManager &nam, const QString &slug, const QString &
     QString filename = fileObj.value(QStringLiteral("filename")).toString();
     QDir().mkpath(modsDir);
 
-    // Remove older jars for this slug so only one version remains.
     const QDir dir(modsDir);
     const QStringList old = dir.entryList({slug + QStringLiteral("*.jar"),
                                            QStringLiteral("*%1*.jar").arg(slug)},
@@ -98,9 +167,10 @@ bool installMod(QNetworkAccessManager &nam, const QString &slug, const QString &
         if (name.compare(filename, Qt::CaseInsensitive) != 0)
             QFile::remove(modsDir + QLatin1Char('/') + name);
     }
-    // Also catch sodium-fabric-* naming
-    if (slug == QStringLiteral("sodium")) {
-        for (const QString &name : dir.entryList({QStringLiteral("sodium*.jar")}, QDir::Files)) {
+    if (slug == QStringLiteral("vulkanmod")) {
+        for (const QString &name :
+             dir.entryList({QStringLiteral("VulkanMod*.jar"), QStringLiteral("vulkanmod*.jar")},
+                           QDir::Files)) {
             if (name.compare(filename, Qt::CaseInsensitive) != 0)
                 QFile::remove(modsDir + QLatin1Char('/') + name);
         }
@@ -109,7 +179,9 @@ bool installMod(QNetworkAccessManager &nam, const QString &slug, const QString &
     const QString dest = modsDir + QLatin1Char('/') + filename;
     if (QFile::exists(dest))
         return true;
-    return download::fetchToFile(nam, QUrl(fileUrl), dest, errorOut);
+    if (!download::fetchToFile(nam, QUrl(fileUrl), dest, errorOut))
+        return false;
+    return true;
 }
 
 } // namespace modrinth
